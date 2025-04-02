@@ -1,0 +1,290 @@
+---
+title: "QSP Homework 1"
+author: "Anjali Venna"
+date: "2025-02-07"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+
+# Part 1: Implement Model for O2 Homeostasis at Initial Conditions
+
+At initial conditions, the O2 homeostasis model shows a rate of change of zero for RBC, EPO, and O2.
+
+```{r Part1}
+# Libraries used
+library(deSolve)
+library(ggplot2)
+library(dplyr)
+library(knitr)
+
+
+# Define the system of ODEs
+model <- function(t, y, params) {
+  with(as.list(c(y, params)), {
+    dRBC <- a1 * SC * (1 + 0.5 * EPO^4 / (2^4 + EPO^4)) - b1 * RBC
+    dO2  <- a2 * RBC - b2 * O2
+    dEPO <- a3 * O2^g3 - b3 * EPO
+    return(list(c(dRBC, dO2, dEPO)))
+  })
+}
+
+# Define parameters
+params <- c(a1 = 0.1, b1 = 0.15, a2 = 0.1, b2 = 1.0, a3 = 100, 
+            b3 = 0.1, g3 = -1, SC = 1000)
+
+# Initial conditions for RBC, O2, and EPO
+y0 <- c(RBC = 1000, O2 = 100, EPO = 10)
+
+# Time sequence for simulation
+times <- seq(0, 70, by = 0.1)
+
+# Solve the system of ODEs
+result_1 <- ode(y = y0, times = times, func = model, parms = params)
+
+# Convert 'result' (matrix) to a dataframe for ggplot2
+df <- as.data.frame(result_1)
+df_long <- reshape2::melt(df, id.vars = "time")
+
+# Plot using ggplot2
+ggplot(df_long, aes(x = time, y = value, color = variable)) +
+  geom_line(size = 1) +
+  labs(x = "Time", y = "Concentration", color = "Legend", title = "O2 Homeostasis Model (Initial Conditions)\n RBC = 1000 | O2 = 100 | EPO = 10") +
+  theme_minimal() +
+  theme(legend.position = "right", plot.title = element_text(hjust = 0.5)) +
+      scale_color_manual(values=c('Red','Blue', "Green"))
+
+# Creating a data table
+# Assuming you already have a dataset with a time column
+# Example: result is your data frame with a 'time' column
+# df1 <- df %>%
+#   mutate(formatted_time = sapply(time, function(t) {
+#     h <- floor(t)  # Extract whole hours
+#     m <- round((t - h) * 60)  # Convert fractional part to minutes
+#     paste(h, "hrs", m, "mins")
+#   }))
+# 
+# kable(as.data.frame(df1), digits = 5, caption = "ODE Simulation Results (Steady State)")
+```
+
+# Part 2: Perform other simulations and document results
+
+Part 2a: Change initial conditions, one at a time
+
+Decreasing Initial Conditions
+
+```{r Part2a, fig.show='hold'}
+# Load necessary libraries
+library(deSolve)  # For ODE solving
+library(ggplot2)  # For plotting
+library(reshape2) # For melting data
+
+# List of initial conditions to test (changing RBC, O2, and EPO values)
+initial_conditions_list <- list(
+  c(RBC = 700, O2 = 100, EPO = 10),
+  c(RBC = 1000, O2 = 50, EPO = 10),
+  c(RBC = 1000, O2 = 100, EPO = 1)
+)
+
+# Loop through each initial condition
+for (i in seq_along(initial_conditions_list)) {
+  
+  # Extract current initial conditions
+  initial_conditions <- initial_conditions_list[[i]]
+  
+  # Solve the ODE system
+  result_2 <- ode(y = initial_conditions, times = times, func = model, parms = params)
+  
+  # Convert 'result' (matrix) to a dataframe for ggplot2
+  df_2 <- as.data.frame(result_2)
+  df_long_2 <- reshape2::melt(df_2, id.vars = "time")
+  
+  # Create a dynamic title based on the current initial conditions
+  plot_title <- paste("O2 Homeostasis Model (Changed Conditions)",  
+                      "\nRBC =", initial_conditions["RBC"], 
+                      "| O2 =", initial_conditions["O2"], 
+                      "| EPO =", initial_conditions["EPO"])
+  
+  # Create plot
+  p <- ggplot(df_long_2, aes(x = time, y = value, color = variable)) +
+    geom_line(size = 1) +
+    labs(x = "Time", y = "Concentration", color = "Legend", title = plot_title) +
+    theme_minimal() +
+    theme(legend.position = "right", plot.title = element_text(hjust = 0.5)) + 
+    scale_color_manual(values=c('Red','Blue', "Green"))
+  
+    print(p)  # Explicitly print the plot inside the loop
+  # 
+   df2 <- df_2 %>%
+   mutate(formatted_time = sapply(time, function(t) {
+     h <- floor(t)  # Extract whole hours
+     m <- round((t - h) * 60)  # Convert fractional part to minutes
+     paste(h, "hrs", m, "mins")
+   }))
+   
+   print(kable(as.data.frame(df2), digits = 5, caption = plot_title))
+
+}
+
+```
+
+Increasing Initial Conditions
+```{r}
+
+```
+
+Part 2b: Change parameters values, one at a time
+
+Decreasing
+
+```{r Part2b}
+# List of changed parameters to test
+changed_param_list <- list(
+  c(a1 = 0.05, b1 = 0.15, a2 = 0.1, b2 = 1.0, a3 = 100, b3 = 0.1, g3 = -1, SC = 1000),
+  c(a1 = 0.1, b1 = 0.07, a2 = 0.1, b2 = 1.0, a3 = 100, b3 = 0.1, g3 = -1, SC = 1000),
+  c(a1 = 0.1, b1 = 0.15, a2 = 0.05, b2 = 1.0, a3 = 100, b3 = 0.1, g3 = -1, SC = 1000),
+  c(a1 = 0.1, b1 = 0.15, a2 = 0.1, b2 = 0.5, a3 = 100, b3 = 0.1, g3 = -1, SC = 1000),
+  c(a1 = 0.1, b1 = 0.15, a2 = 0.1, b2 = 1.0, a3 = 50, b3 = 0.1, g3 = -1, SC = 1000),
+  c(a1 = 0.1, b1 = 0.15, a2 = 0.1, b2 = 1.0, a3 = 100, b3 = 0.05, g3 = -1, SC = 1000),
+  c(a1 = 0.1, b1 = 0.15, a2 = 0.1, b2 = 1.0, a3 = 100, b3 = 0.1, g3 = -1.5, SC = 1000),
+  c(a1 = 0.1, b1 = 0.15, a2 = 0.1, b2 = 1.0, a3 = 100, b3 = 0.1, g3 = -1, SC = 500)
+)
+
+# Loop through each initial condition
+for (i in seq_along(changed_param_list)) {
+  
+  # Extract current initial conditions
+  changed_param <- changed_param_list[[i]]
+  
+  param_names <- c("a1", "b1", "a2", "b2", "a3", "b3", "g3", "SC")
+  
+  # Solve the ODE system
+  result_3 <- ode(y = y0, times = times, func = model, parms = changed_param)
+  
+  # Convert 'result' (matrix) to a dataframe for ggplot2
+  df_3 <- as.data.frame(result_3)
+  df_long_3 <- reshape2::melt(df_3, id.vars = "time")
+  
+  # Create a dynamic title based on the current initial conditions
+  plot_title <- paste("O2 Homeostasis Model - Case", i, "\nChanged Parameter =", param_names[i], "(", changed_param[i],")")
+  
+  # Create plot
+  p <- ggplot(df_long_3, aes(x = time, y = value, color = variable)) +
+    geom_line(size = 1) +
+    labs(x = "Time", y = "Concentration", color = "Legend", title = plot_title) +
+    theme_minimal() +
+    theme(legend.position = "right", plot.title = element_text(hjust = 0.5))
+  
+    print(p)  # Explicitly print the plot inside the loop
+  # 
+  # df2 <- df_2 %>%
+  # mutate(formatted_time = sapply(time, function(t) {
+  #   h <- floor(t)  # Extract whole hours
+  #   m <- round((t - h) * 60)  # Convert fractional part to minutes
+  #   paste(h, "hrs", m, "mins")
+  # }))
+  # 
+  # print(kable(as.data.frame(df2), digits = 5, caption = plot_title))
+
+}
+
+```
+
+
+Part 2b: Study Combinations of Changes
+
+1.	What if lower g3 but higher SC?
+2.	What if lower A2, higher RBC?
+3.	What if lower A2, lower O2?
+
+```{r Part 2b}
+
+# Lower g3, Higher SC
+
+  # Define parameters
+  params <- c(a1 = 0.1, b1 = 0.15, a2 = 0.1, b2 = 1.0, a3 = 100, 
+              b3 = 0.1, g3 = -1.5, SC = 1500)
+  
+  # Initial conditions for RBC, O2, and EPO
+  y0 <- c(RBC = 1000, O2 = 100, EPO = 10)
+  
+  # Time sequence for simulation
+  times <- seq(0, 70, by = 0.1)
+  
+  # Solve the system of ODEs
+  result_1 <- ode(y = y0, times = times, func = model, parms = params)
+  
+  # Convert 'result' (matrix) to a dataframe for ggplot2
+  df <- as.data.frame(result_1)
+  df_long <- reshape2::melt(df, id.vars = "time")
+  
+  # Plot using ggplot2
+  ggplot(df_long, aes(x = time, y = value, color = variable)) +
+    geom_line(size = 1) +
+    labs(x = "Time", y = "Concentration", color = "Legend", title = "Lower g3 [-1.5], Higher SC [1500]") +
+    theme_minimal() +
+    theme(legend.position = "right", plot.title = element_text(hjust = 0.5)) +
+        scale_color_manual(values=c('Red','Blue', "Green"))
+
+
+# Lower A2, Higher RBC
+  params <- c(a1 = 0.1, b1 = 0.15, a2 = 0.05, b2 = 1.0, a3 = 100, 
+              b3 = 0.1, g3 = -1, SC = 1000)
+  
+  # Initial conditions for RBC, O2, and EPO
+  y0 <- c(RBC = 1500, O2 = 100, EPO = 10)
+  
+  # Time sequence for simulation
+  times <- seq(0, 70, by = 0.1)
+  
+  # Solve the system of ODEs
+  result_1 <- ode(y = y0, times = times, func = model, parms = params)
+  
+  # Convert 'result' (matrix) to a dataframe for ggplot2
+  df <- as.data.frame(result_1)
+  df_long <- reshape2::melt(df, id.vars = "time")
+  
+  # Plot using ggplot2
+  ggplot(df_long, aes(x = time, y = value, color = variable)) +
+    geom_line(size = 1) +
+    labs(x = "Time", y = "Concentration", color = "Legend", title = "Lower a2 [0.05], Higher RBC [1500]") +
+    theme_minimal() +
+    theme(legend.position = "right", plot.title = element_text(hjust = 0.5)) +
+        scale_color_manual(values=c('Red','Blue', "Green"))
+
+
+# Lower A2, Lower O2
+  # Define parameters
+  params <- c(a1 = 0.1, b1 = 0.15, a2 = 0.05, b2 = 1.0, a3 = 100, 
+              b3 = 0.1, g3 = -1, SC = 1000)
+  
+  # Initial conditions for RBC, O2, and EPO
+  y0 <- c(RBC = 1000, O2 = 25, EPO = 10)
+  
+  # Time sequence for simulation
+  times <- seq(0, 70, by = 0.1)
+  
+  # Solve the system of ODEs
+  result_1 <- ode(y = y0, times = times, func = model, parms = params)
+  
+  # Convert 'result' (matrix) to a dataframe for ggplot2
+  df <- as.data.frame(result_1)
+  df_long <- reshape2::melt(df, id.vars = "time")
+  
+  # Plot using ggplot2
+  ggplot(df_long, aes(x = time, y = value, color = variable)) +
+    geom_line(size = 1) +
+    labs(x = "Time", y = "Concentration", color = "Legend", title = "Lower a2 [0.05], Lower O2 [25]") +
+    theme_minimal() +
+    theme(legend.position = "right", plot.title = element_text(hjust = 0.5)) +
+        scale_color_manual(values=c('Red','Blue', "Green"))
+
+```
+
+
+
+
