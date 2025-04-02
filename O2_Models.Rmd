@@ -1,5 +1,5 @@
 ---
-title: "QSP Homework 1"
+title: "Modeling O2 Homeostasis"
 author: "Anjali Venna"
 date: "2025-02-07"
 output:
